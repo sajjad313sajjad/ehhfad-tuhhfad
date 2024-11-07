@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diary Terminal</title>
+  <style>
+    /* إعدادات عامة */
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f3f4f6;
+      color: #333;
+      direction: rtl;
+    }
+    
+    /* صندوق الواجهة */
+    .container {
+      width: 90%;
+      max-width: 500px;
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    /* عنوان */
+    h2 {
+      color: #333;
+      margin-bottom: 1.5rem;
+    }
+
+    /* مدخلات الحقول */
+    input[type="text"], input[type="password"], textarea {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 0.5rem 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    /* أزرار */
+    button {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 0.5rem 0;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+
+    /* تحذير */
+    .warning {
+      color: red;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+
+    /* إعدادات العرض والإخفاء */
+    #signupScreen, #notes, #main-content {
+      display: none;
+    }
+
+    /* مظهر الملاحظات */
+    #notes {
+      margin-top: 1rem;
+      border-top: 1px solid #ddd;
+      padding-top: 1rem;
+      text-align: left;
+    }
+
+    /* نمط زر تسجيل الخروج */
+    #logoutButton {
+      background-color: #e74c3c;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+    }
+    #logoutButton:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- شاشة تسجيل الدخول -->
+    <div id="loginScreen">
+      <h2>تسجيل الدخول</h2>
+      <input type="text" id="username" placeholder="اسم المستخدم" />
+      <input type="password" id="password" placeholder="كلمة المرور" />
+      <button id="loginButton">تسجيل الدخول</button>
+      <button id="signupButton">إنشاء حساب</button>
+      <div class="warning" id="loginWarning" style="display: none;">اسم المستخدم أو كلمة المرور غير صحيحة.</div>
+    </div>
+
+    <!-- شاشة إنشاء حساب -->
+    <div id="signupScreen">
+      <h2>إنشاء حساب جديد</h2>
+      <input type="text" id="newUsername" placeholder="اسم المستخدم" />
+      <input type="password" id="newPassword" placeholder="كلمة المرور" />
+      <input type="password" id="confirmPassword" placeholder="تأكيد كلمة المرور" />
+      <button id="createAccountButton">إنشاء الحساب</button>
+      <div class="warning" id="passwordWarning" style="display: none;">يجب أن تكون كلمة المرور مكونة من 8 أحرف على الأقل وتتضمن حروف صغيرة وكبيرة وأرقام.</div>
+    </div>
+
+    <!-- محتوى النص الرئيسي -->
+    <div id="main-content">
+      <button id="logoutButton">تسجيل الخروج</button>
+      <textarea id="command" placeholder="اكتب ملاحظتك هنا..."></textarea>
+      <button id="saveButton">حفظ الملاحظة</button>
+    </div>
+
+    <!-- عرض الملاحظات -->
+    <div id="notes"></div>
+  </div>
+
+  <script>
+    const loginScreen = document.getElementById('loginScreen');
+    const signupScreen = document.getElementById('signupScreen');
+    const notesElement = document.getElementById('notes');
+    const mainContent = document.getElementById('main-content');
+    const logoutButton = document.getElementById('logoutButton');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const newUsernameInput = document.getElementById('newUsername');
+    const newPasswordInput = document.getElementById('newPassword');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const loginButton = document.getElementById('loginButton');
+    const signupButton = document.getElementById('signupButton');
+    const createAccountButton = document.getElementById('createAccountButton');
+    const passwordWarning = document.getElementById('passwordWarning');
+    const loginWarning = document.getElementById('loginWarning');
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+    let diaryEntries = JSON.parse(localStorage.getItem('diaryEntries')) || [];
+
+    function checkLogin() {
+      const loggedInUser = localStorage.getItem('loggedInUser');
+      if (loggedInUser) {
+        showMainContent();
+      } else {
+        loginScreen.style.display = 'block';
+      }
+    }
+
+    function showMainContent() {
+      loginScreen.style.display = 'none';
+      signupScreen.style.display = 'none';
+      mainContent.style.display = 'block';
+      notesElement.style.display = 'block';
+      displayNotes();
+    }
+
+    loginButton.addEventListener('click', () => {
+      const username = usernameInput.value;
+      const password = passwordInput.value;
+      const user = users.find(u => u.username === username && u.password === password);
+      if (user) {
+        localStorage.setItem('loggedInUser', username);
+        showMainContent();
+      } else {
+        loginWarning.style.display = 'block';
+      }
+    });
+
+    signupButton.addEventListener('click', () => {
+      loginScreen.style.display = 'none';
+      signupScreen.style.display = 'block';
+    });
+
+    createAccountButton.addEventListener('click', () => {
+      const username = newUsernameInput.value;
+      const password = newPasswordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+      if (password === confirmPassword && passwordRegex.test(password)) {
+        users.push({ username, password });
+        localStorage.setItem('users', JSON.stringify(users));
+        signupScreen.style.display = 'none';
+        loginScreen.style.display = 'block';
+        passwordWarning.style.display = 'none';
+      } else {
+        passwordWarning.style.display = 'block';
+      }
+    });
+
+    saveButton.addEventListener('click', () => {
+      const noteText = document.getElementById('command').value;
+      if (noteText.trim() !== '') {
+        diaryEntries.push(noteText);
+        localStorage.setItem('diaryEntries', JSON.stringify(diaryEntries));
+        displayNotes();
+        document.getElementById('command').value = '';
+      }
+    });
+
+    function displayNotes() {
+      notesElement.innerHTML = '';
+      diaryEntries.forEach((entry, index) => {
+        const note = document.createElement('div');
+        note.innerText = `${index + 1}. ${entry}`;
+        notesElement.appendChild(note);
+      });
+    }
+
+    logoutButton.addEventListener('click', () => {
+      localStorage.removeItem('loggedInUser');
+      mainContent.style.display = 'none';
+      notesElement.style.display = 'none';
+      loginScreen.style.display = 'block';
+    });
+
+    checkLogin();
+  </script>
+</body>
+</html>
